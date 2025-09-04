@@ -110,7 +110,7 @@ class TruckBackerEnv_D(gym.Env):
             info = {}
 
         # Return observation, reward, terminated, info
-        return obs, reward, terminated, truncated, info
+        return obs, reward, terminated or truncated, info
     
 # For unit testing
 if __name__=="__main__":

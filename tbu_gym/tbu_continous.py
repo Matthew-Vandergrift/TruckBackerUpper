@@ -1,10 +1,3 @@
-# Retrieved 2025-01-01 and modified from https://github.com/Matthew-Vandergrift/TruckBackerUpper-ENV
-#
-# Custom Truck Backer Upper Gymnasium Environment 
-# Description of Truck Backer Upper from : An application of the temporal difference
-# algorithm to the truck backer-upper problem
-# Inspiration of PyGame Code from : https://github.com/johnnycode8/gym_custom_env
-
 import numpy as np
 import gym
 import sys
@@ -109,7 +102,7 @@ class TruckBackerEnv_C(gym.Env):
             info = {}
 
         # Return observation, reward, terminated, info
-        return obs, reward, terminated, truncated, info
+        return obs, reward, terminated or truncated, info
     
 # For unit testing
 if __name__=="__main__":

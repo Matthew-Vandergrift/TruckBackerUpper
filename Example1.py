@@ -1,6 +1,6 @@
 import gymnasium as gym
 from stable_baselines3 import SAC
-from TruckBackerEnv_Continous import TruckBackerEnv_C
+from tbu_gym.tbu_continous import TruckBackerEnv_C
 from wandb.integration.sb3 import WandbCallback
 import wandb
 from stable_baselines3.common.monitor import Monitor
