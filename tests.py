@@ -10,7 +10,7 @@ from tbu_gym.tbu_discrete import TruckBackerEnv_D
 from tbu_jax.tbu_continous import TBUax_c, EnvState
 from tbu_jax.tbu_discrete import TBUax_d, EnvState
 
-TEST_VERSION = "d"
+TEST_VERSION = "d" # d to test the discrete versions and c to test the continous versions 
 
 def fix_state_gym(env):
     env.truck.x = 100
