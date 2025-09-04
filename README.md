@@ -15,4 +15,6 @@ This is an example of running SAC, as implemented by Stablebaselines3, on the Gy
 This is an example of running a random uniform policy on the gymnax TBU discrete environment.
 
 ## Tests
-This is not yet finished code to ensure that both version remain indentitcal up to stochasticity. 
+Removes randomness in the environments and runs them for 10k steps with random actions to check if they are equivalent. 
+They are not perfectly equal due to precision differences between the versions, but they ought to be identitical aside 
+from this. 
