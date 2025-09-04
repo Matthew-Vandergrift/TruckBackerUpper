@@ -10,7 +10,7 @@ from tbu_gym.tbu_discrete import TruckBackerEnv_D
 from tbu_jax.tbu_continous import TBUax_c, EnvState
 from tbu_jax.tbu_discrete import TBUax_d, EnvState
 
-TEST_VERSION = "d" # d to test the discrete versions and c to test the continous versions 
+TEST_VERSION = "c" # d to test the discrete versions and c to test the continous versions 
 
 def fix_state_gym(env, keep_counter=False):
     env.truck.x = 100
@@ -64,7 +64,7 @@ while s <= 10_000:
     # Taking Action in Both Environments 
     rng, rng_step = jax.random.split(rng)
     obs_jax, env_state, reward_jax, done, info = env_jax.step(rng_step, env_state, action, env_params) # In JAX 
-    obs_gym, reward_gym, terminated, truncated, info = env_gym.step(jnp.array([action])) # IN Gym     
+    obs_gym, reward_gym, gym_done, info = env_gym.step(jnp.array([action])) # IN Gym     
 
     # Catching Internal Stochastic Transitions using the fact that I can look into the gym one 
     is_stochastic = (env_gym.had_recent_stochastic == True)
@@ -72,17 +72,17 @@ while s <= 10_000:
         env_gym = fix_state_gym(env_gym, keep_counter=True)
         env_state = fix_state_jax(env_state=env_state, keep_counter=True)
     # Resetting Environments one they are done to avoid different stochastic inits
-    elif done or (terminated or truncated):
+    elif done or gym_done:
         env_gym = fix_state_gym(env_gym)
         env_state = fix_state_jax()
     else:
         # Checking for equality between outputs 
         obs_eq = np.allclose(obs_jax.squeeze(),obs_gym.squeeze(), atol=0.0001) 
         obs_reward = np.all(reward_gym == reward_jax)
-        obs_term = np.all((terminated or truncated) == done)
+        obs_term = np.all(gym_done == done)
         if not (obs_eq and obs_reward and obs_term):
             print("Failure on Step %s" %s)
-            print("Terminal State :", (done or (terminated or truncated)))
+            print("Terminal State :", (done or gym_done))
             print("Failing Action :", action)
             if not obs_eq:
                 print("Observation Failure")
@@ -92,12 +92,12 @@ while s <= 10_000:
                 print(reward_gym, reward_jax)
             if not obs_term:
                 print("Termination Failure")
-                print(terminated, truncated, done)
+                print(gym_done, done)
             sys.exit()
         else:
             print("made it through check :", s)
     # Resetting Environments one they are done to avoid different stochastic inits
-    if done or (terminated or truncated):
+    if done or gym_done:
         env_gym = fix_state_gym(env_gym)
         env_state = fix_state_jax()
 
