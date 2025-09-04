@@ -12,16 +12,22 @@ from tbu_jax.tbu_discrete import TBUax_d, EnvState
 
 TEST_VERSION = "d" # d to test the discrete versions and c to test the continous versions 
 
-def fix_state_gym(env):
+def fix_state_gym(env, keep_counter=False):
     env.truck.x = 100
     env.truck.y = 0
     env.truck.theta_t = 0
     env.truck.theta_c = 0
-    env.step_counter = 0
+    if not keep_counter:
+        env.step_counter = 0
+    else:
+        env.step_counter = env.step_counter
     return env
 
-def fix_state_jax():
-    env_state = EnvState(x=100,y=0,theta_t=0,theta_c=0,time=0,)
+def fix_state_jax(env_state=None, keep_counter=False):
+    if not keep_counter:
+        env_state = EnvState(x=100,y=0,theta_t=0,theta_c=0,time=0,)
+    else:
+        env_state = EnvState(x=100,y=0,theta_t=0,theta_c=0,time=env_state.time,)
     return env_state
 
 
@@ -63,15 +69,15 @@ while s <= 10_000:
     # Catching Internal Stochastic Transitions using the fact that I can look into the gym one 
     is_stochastic = (env_gym.had_recent_stochastic == True)
     if is_stochastic:
-        env_gym = fix_state_gym(env_gym)
-        env_state = fix_state_jax()
+        env_gym = fix_state_gym(env_gym, keep_counter=True)
+        env_state = fix_state_jax(env_state=env_state, keep_counter=True)
     # Resetting Environments one they are done to avoid different stochastic inits
     elif done or (terminated or truncated):
         env_gym = fix_state_gym(env_gym)
         env_state = fix_state_jax()
     else:
         # Checking for equality between outputs 
-        obs_eq = np.allclose(obs_jax.squeeze(),obs_gym.squeeze(), rtol=0.01) 
+        obs_eq = np.allclose(obs_jax.squeeze(),obs_gym.squeeze(), atol=0.0001) 
         obs_reward = np.all(reward_gym == reward_jax)
         obs_term = np.all((terminated or truncated) == done)
         if not (obs_eq and obs_reward and obs_term):
