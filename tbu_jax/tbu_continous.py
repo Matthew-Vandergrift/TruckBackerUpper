@@ -111,10 +111,10 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
         done = jnp.logical_or(terminated_goal, (state.time == 300))
         # Returning things in the Gymnax Style
         return (
-            lax.stop_gradient(self.get_obs(state, params)),
-            lax.stop_gradient(state),
+            lax.stop_gradient(self.get_obs(new_state, params)),
+            lax.stop_gradient(new_state),
             reward,
-            done, {"discount": self.discount(state, params)}) 
+            done, {"discount": self.discount(new_state, params)}) 
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
