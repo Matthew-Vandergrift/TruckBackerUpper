@@ -6,6 +6,14 @@ import jax
 from jax import lax
 import jax.numpy as jnp
 from gymnax.environments import environment, spaces
+from typing import (
+    Any,
+    Generic,
+    TypeVar,
+    overload,
+)
+from functools import partial
+
 
 # # Uncomment Below for Debugging
 #jax.config.update("jax_disable_jit", True)
@@ -55,7 +63,7 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
         return EnvParams()
 
     def at_goal(self, state: EnvState, params : EnvParams):
-        at_goal = jnp.logical_and(jnp.sqrt((state.x**2 + state.y**2) <= params.dist_tol), jnp.abs(state.theta_t <= params.angle_tol))
+        at_goal = jnp.logical_and(jnp.sqrt((state.x**2 + state.y**2) <= params.dist_tol), jnp.abs(state.theta_t) <= params.angle_tol)
         return at_goal
     
     def is_jackknifed(self, state: EnvState, params : EnvParams):
@@ -101,14 +109,15 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
         is_valid_angle = self.valid_angles(new_state, params)
         # Computing Termination Condition
         terminated_goal = self.at_goal(new_state, params)
-        not_in_valid_location = jnp.logical_or(jnp.logical_not(is_valid_loc), jnp.logical_not(is_valid_angle))
-        terminated_fail = jnp.logical_or(is_jacked, not_in_valid_location)
+        valid_loc_and_angles = jnp.logical_and(is_valid_loc, is_valid_angle)
+        valid = jnp.logical_and(jnp.logical_not(is_jacked), valid_loc_and_angles)
+        terminated_fail = jnp.logical_not(valid)
         # Computing Reward
         reward = 101*terminated_goal + -1 
         # Resetting the Truck but not the Environment
-        new_state = jax.lax.cond(terminated_fail, lambda x : self.reset_truck(x, state, params), lambda x : new_state, key)
+        new_state = jax.lax.cond(terminated_fail, lambda x : self.reset_truck(x, new_state, params), lambda x : new_state, key)
         # Computing Done 
-        done = jnp.logical_or(terminated_goal, (state.time == 300))
+        done = jnp.logical_or(terminated_goal, (new_state.time == 300))
         # Returning things in the Gymnax Style
         return (
             lax.stop_gradient(self.get_obs(new_state, params)),

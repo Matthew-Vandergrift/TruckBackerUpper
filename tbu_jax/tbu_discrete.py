@@ -61,7 +61,7 @@ class TBUax_d(environment.Environment[EnvState, EnvParams]):
         return EnvParams()
 
     def at_goal(self, state: EnvState, params : EnvParams):
-        at_goal = jnp.logical_and(jnp.sqrt((state.x**2 + state.y**2) <= params.dist_tol), jnp.abs(state.theta_t <= params.angle_tol))
+        at_goal = jnp.logical_and(jnp.sqrt((state.x**2 + state.y**2) <= params.dist_tol), jnp.abs(state.theta_t) <= params.angle_tol)
         return at_goal
     
     def is_jackknifed(self, state: EnvState, params : EnvParams):

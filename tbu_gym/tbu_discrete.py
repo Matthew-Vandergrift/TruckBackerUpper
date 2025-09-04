@@ -46,6 +46,8 @@ class TruckBackerEnv_D(gym.Env):
         if render_mode == "human":
             self.fps = fps
             self.last_action=''
+        # Stuff for Testing 
+        self.had_recent_stochastic = False
 
     # GYM FUNCTION
     def seed(self, seed=None):
@@ -70,6 +72,7 @@ class TruckBackerEnv_D(gym.Env):
         # Adding a step to the counter
         action = action/2 - 1
         self.step_counter += 1
+        self.had_recent_stochastic = False
 
         # Taking the action
         terminated_goal, terminated_fail = self.truck.step(u = action) 
@@ -77,6 +80,7 @@ class TruckBackerEnv_D(gym.Env):
         truncated = (self.step_counter == 300)
 
         if terminated_fail:
+            self.had_recent_stochastic = True
             #self.truck.reset_truck(self.np_random.uniform(-10,10), self.np_random.uniform(-1.5, 1.5))
             self.truck.reset_truck(x_rand_val = self.np_random.uniform(100, 150), y_rand_val=self.np_random.uniform(-20 , 20), theta_t_rand_val=self.np_random.uniform(-1, 1), theta_c_rand_val=self.np_random.uniform(-0.5,0.5))
             
@@ -106,7 +110,7 @@ class TruckBackerEnv_D(gym.Env):
             info = {}
 
         # Return observation, reward, terminated, info
-        return obs, reward, terminated or truncated, info
+        return obs, reward, terminated, truncated, info
     
 # For unit testing
 if __name__=="__main__":
