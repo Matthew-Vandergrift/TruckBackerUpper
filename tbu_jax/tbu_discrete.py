@@ -47,7 +47,7 @@ class EnvParams(environment.EnvParams):
     angle_tol : float = 0.5
     jack_tol : float = jnp.pi/2
     max_angle : float = 4*jnp.pi
-    max_steps_in_episode: int = 301
+    max_steps_in_episode: int = 300
     restart_bounds : Reset_Bounds = Reset_Bounds(x=(100.0,150.0), y=(-20.0,20.0), theta_t=(-1.0,1.0), theta_c=(-0.5, 0.5))
 
 
