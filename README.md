@@ -23,6 +23,8 @@ from this.
 TODO: Add PPO Learning Curves to this repo
 
 #### SAC Results
+Note, this SAC is using 20k exploration steps which helps a lot in this problem, so it's not to be expected by default SAC. 
+
 SAC running on jax version of continuous TBU 
 ![A majestic mountain range at sunset](imgs/SAC_defaults_TBUax_c_Returns_CI_for_10_seeds.png "example learning curves for cont SAC on TBU cont")
 
