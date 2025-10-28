@@ -48,7 +48,7 @@ class EnvParams(environment.EnvParams):
     angle_tol : float = 0.5
     jack_tol : float = jnp.pi/2
     max_angle : float = 4*jnp.pi
-    max_steps_in_episode: int = 300  
+    max_steps_in_episode: int = 301
     restart_bounds : Reset_Bounds = Reset_Bounds(x=(100,150), y=(-20,20), theta_t=(-1,1), theta_c=(-0.5, 0.5))
 
 
@@ -63,7 +63,7 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
         return EnvParams()
 
     def at_goal(self, state: EnvState, params : EnvParams):
-        at_goal = jnp.logical_and(jnp.sqrt((state.x**2 + state.y**2) <= params.dist_tol), jnp.abs(state.theta_t) <= params.angle_tol)
+        at_goal = jnp.logical_and((jnp.sqrt((state.x**2 + state.y**2)) <= params.dist_tol), (jnp.abs(state.theta_t) <= params.angle_tol))
         return at_goal
     
     def is_jackknifed(self, state: EnvState, params : EnvParams):
@@ -79,7 +79,6 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
     def valid_angles(self, state : EnvState, params : EnvParams):
         return state.theta_t <= params.max_angle
 
-
     def step_env(
         self,
         key: chex.PRNGKey, 
@@ -89,6 +88,7 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
     ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Performs step transitions in the environment."""
         # Intermediate Variables for computation
+        action = jnp.clip(action, min=-1.0, max=1.0)
         a = 3.0 * jnp.cos(action)
         b = a * jnp.cos(state.theta_c)
         # Updating State Variables
@@ -113,11 +113,11 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
         valid = jnp.logical_and(jnp.logical_not(is_jacked), valid_loc_and_angles)
         terminated_fail = jnp.logical_not(valid)
         # Computing Reward
-        reward = 101*terminated_goal + -1 
+        reward = (101.0*terminated_goal + -1.0)
         # Resetting the Truck but not the Environment
         new_state = jax.lax.cond(terminated_fail, lambda x : self.reset_truck(x, new_state, params), lambda x : new_state, key)
         # Computing Done 
-        done = jnp.logical_or(terminated_goal, (new_state.time == 300))
+        done = jnp.logical_or(terminated_goal, (new_state.time >= params.max_steps_in_episode))
         # Returning things in the Gymnax Style
         return (
             lax.stop_gradient(self.get_obs(new_state, params)),
@@ -157,7 +157,7 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
     def get_obs(self, state: EnvState, params : EnvParams, key=None) -> chex.Array:
         """Applies observation function to state."""
         # We include state-scaling here and remove the time variable 
-        normed_x = (6*state.x / params.x_bounds[1] - 3)
+        normed_x = (6*(state.x / params.x_bounds[1]) - 3)
         normed_y = (3*state.y / params.y_bounds[1])
         obs = jnp.array([normed_x,normed_y, state.theta_c, state.theta_t])
         x = jnp.reshape(obs, (-1,))
@@ -172,7 +172,7 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
 
     def action_space(self, params: Optional[EnvParams] = None) -> spaces.Box:
         """Action space of the environment."""
-        return spaces.Box(-1.0, 1.0, shape=(1,), dtype=jnp.float)
+        return spaces.Box(-1.0, 1.0, shape=(1,), dtype=jnp.float32)
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
@@ -184,8 +184,8 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
         """State space of the environment."""
         return spaces.Dict(
             {
-                "x": spaces.Box(params.x_bounds[0], params.x_bounds[1], (), jnp.float),
-                "y": spaces.Box(params.y_bounds[0], params.y_bounds[1], (), jnp.float),
+                "x": spaces.Box(-3.0, 3.0, (), jnp.float),
+                "y": spaces.Box(-3.0, 3.0, (), jnp.float),
                 "theta_t": spaces.Box(-2*jnp.pi, 2*jnp.pi, (), jnp.float),
                 "theta_c": spaces.Box(-2*jnp.pi, 2*jnp.pi, (), jnp.float),
                 "time": spaces.Discrete(params.max_steps_in_episode),
@@ -196,7 +196,7 @@ class TBUax_c(environment.Environment[EnvState, EnvParams]):
         """Check whether state transition is terminal."""
         # Computing Termination Condition
         terminated_goal = self.at_goal(state, params)
-        done = jnp.logical_or(terminated_goal, (state.time == 300))
+        done = jnp.logical_or(terminated_goal, (state.time == params.max_steps_in_episode))
         return done
 # This is a way to avoid placing this in the gymnax registry, and having to edit your local gymnax 
 # there's certaintly a better way to accomplish this.
