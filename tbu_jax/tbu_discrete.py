@@ -116,7 +116,7 @@ class TBUax_d(environment.Environment[EnvState, EnvParams]):
         # Resetting the Truck but not the Environment
         new_state = jax.lax.cond(terminated_fail, lambda x : self.reset_truck(x, new_state, params), lambda x : new_state, key)
         # Computing Done 
-        done = jnp.logical_or(terminated_goal, (new_state.time >= params.max_steps_in_episode))
+        done = terminated_goal
         # Returning things in the Gymnax Style
         return (
             lax.stop_gradient(self.get_obs(new_state, params)),
@@ -191,12 +191,9 @@ class TBUax_d(environment.Environment[EnvState, EnvParams]):
             }
         )
     
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
-        """Check whether state transition is terminal."""
-        # Computing Termination Condition
-        terminated_goal = self.at_goal(state, params)
-        done = jnp.logical_or(terminated_goal, (state.time >= params.max_steps_in_episode))
-        return done
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
+        """Natural termination only; the time limit is handled by is_truncated."""
+        return self.at_goal(state, params)
 
 # You can place this into the gymnax environment, by editing the registry or you can do this. 
     @partial(jax.jit, static_argnames=("self",))
@@ -216,6 +213,9 @@ class TBUax_d(environment.Environment[EnvState, EnvParams]):
         obs_st, state_st, reward, done, info = self.step_env(
             key_step, state, action, params
         )
+        ### Claude Suggestion
+        # step_env's done excludes the time limit, so add it back for this auto-reset
+        done = jnp.logical_or(done, self.is_truncated(state_st, params))
         obs_re, state_re = self.reset_env(key_reset, params)
 
         # Auto-reset environment based on termination
